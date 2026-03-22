@@ -188,6 +188,70 @@
   }
   .char-count.warn { color: #c0553a; }
 
+  /* 이미지 업로드 영역 */
+  .upload-area {
+    border: 1.5px dashed var(--mint);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: var(--frost);
+    position: relative;
+  }
+  .upload-area:hover { border-color: var(--deep-teal); background: var(--sage); }
+  .upload-area.has-file { border-color: var(--deep-teal); border-style: solid; }
+  .upload-area input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+  }
+  .upload-area input[type="file"]:focus { box-shadow: none; }
+  .upload-icon { font-size: 24px; margin-bottom: 6px; }
+  .upload-text {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.5;
+  }
+  .upload-text strong { color: var(--deep-teal); font-weight: 500; }
+
+  .preview-wrap {
+    display: none;
+    margin-top: 10px;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 160px;
+  }
+  .preview-wrap img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    border-radius: 10px;
+    display: block;
+  }
+  .preview-remove {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 26px; height: 26px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+
   .submit-btn {
     width: 100%;
     padding: 16px;
@@ -330,6 +394,24 @@
       <p class="char-count" id="charCount">0 / 1000</p>
     </div>
 
+    <div class="field">
+      <div class="label-row">
+        <label>스크린샷</label>
+        <span class="optional-badge">선택</span>
+      </div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="imageInput" accept="image/*" onchange="onFileChange(event)">
+        <div id="uploadPlaceholder">
+          <div class="upload-icon">🖼️</div>
+          <p class="upload-text"><strong>탭하여 이미지 첨부</strong><br>PNG, JPG, GIF · 최대 8MB</p>
+        </div>
+      </div>
+      <div class="preview-wrap" id="previewWrap">
+        <img id="previewImg" src="" alt="미리보기">
+        <button class="preview-remove" onclick="removeFile()">✕</button>
+      </div>
+    </div>
+
     <button class="submit-btn" id="submitBtn" onclick="submitForm()">
       <span class="btn-inner">
         <span class="spinner"></span>
@@ -352,8 +434,8 @@
 </div>
 
 <script>
-  const DISCORD_WEBHOOK_URL = 'https://broken-pond-fb01.minkyoung2550.workers.dev';
-  
+  const WORKER_URL = 'https://broken-pond-fb01.minkyoung2550.workers.dev';
+
   const categoryLabels = {
     bug: '🐛 버그 / 오류 신고',
     feature: '💡 기능 제안',
@@ -385,6 +467,32 @@
     el.className = 'char-count' + (len > 900 ? ' warn' : '');
   });
 
+  function onFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('8MB 이하 이미지만 첨부할 수 있어요.', 'error');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      document.getElementById('previewImg').src = ev.target.result;
+      document.getElementById('previewWrap').style.display = 'block';
+      document.getElementById('uploadArea').classList.add('has-file');
+      document.getElementById('uploadPlaceholder').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeFile() {
+    document.getElementById('imageInput').value = '';
+    document.getElementById('previewImg').src = '';
+    document.getElementById('previewWrap').style.display = 'none';
+    document.getElementById('uploadArea').classList.remove('has-file');
+    document.getElementById('uploadPlaceholder').style.display = 'block';
+  }
+
   function showToast(msg, type = '') {
     const toast = document.getElementById('toast');
     document.getElementById('toastIcon').textContent = type === 'success' ? '✅' : '❌';
@@ -398,6 +506,7 @@
     const name = document.getElementById('name').value.trim();
     const email = document.getElementById('email').value.trim();
     const message = document.getElementById('message').value.trim();
+    const imageFile = document.getElementById('imageInput').files[0];
 
     if (!category) return showToast('문의 유형을 선택해주세요.', 'error');
     if (!name) return showToast('이름을 입력해주세요.', 'error');
@@ -408,14 +517,13 @@
 
     const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
 
-    // description 방식으로 구성 — 항목 사이 빈 줄로 간격 확보
     let desc = '';
     desc += `**유형**\n${categoryLabels[category]}\n\n`;
     desc += `**이름**\n${name}\n\n`;
     if (email) desc += `**이메일**\n${email}\n\n`;
     desc += `**문의 내용**\n${message.length > 800 ? message.slice(0, 800) + '…' : message}`;
 
-    const payload = {
+    const embedPayload = {
       username: '문의봇',
       embeds: [{
         title: '📬 새 문의가 도착했어요',
@@ -426,11 +534,26 @@
     };
 
     try {
-      const res = await fetch(DISCORD_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      let res;
+
+      if (imageFile) {
+        // 이미지 있으면 multipart/form-data로 전송
+        const formData = new FormData();
+        formData.append('payload_json', JSON.stringify(embedPayload));
+        formData.append('files[0]', imageFile, imageFile.name);
+
+        res = await fetch(WORKER_URL, {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        // 이미지 없으면 JSON으로 전송
+        res = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(embedPayload),
+        });
+      }
 
       if (res.ok || res.status === 204) {
         document.getElementById('formView').style.display = 'none';
@@ -458,6 +581,7 @@
     document.getElementById('message').value = '';
     document.getElementById('charCount').textContent = '0 / 1000';
     document.getElementById('message').placeholder = placeholders.default;
+    removeFile();
   }
 </script>
 </body>
