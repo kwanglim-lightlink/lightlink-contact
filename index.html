@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>문의하기</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
@@ -14,7 +14,7 @@
     --charcoal: #333333;
     --frost: #F8FBF5;
     --white: #FFFFFF;
-    --muted: #999999;
+    --muted: #6B7280;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -190,7 +190,10 @@
   /* 이미지 업로드 */
   #imageInput { display: none; }
 
+  .receipt-number { max-width: 100%; overflow-wrap: anywhere; font-size: 12px; color: var(--deep-teal); margin-bottom: 12px; }
   .upload-area {
+    width: 100%;
+    font-family: inherit;
     border: 1.5px dashed var(--mint);
     border-radius: 12px;
     padding: 20px 16px;
@@ -200,8 +203,9 @@
     background: var(--frost);
   }
   .upload-area:hover { border-color: var(--deep-teal); background: var(--sage); }
-  .upload-icon { font-size: 24px; margin-bottom: 6px; }
+  .upload-icon { display: block; font-size: 24px; margin-bottom: 6px; }
   .upload-text {
+    display: block;
     font-size: 13px;
     color: var(--muted);
     font-weight: 300;
@@ -316,7 +320,8 @@
     padding: 14px 24px;
     border-radius: 50px;
     font-size: 13.5px; font-weight: 500;
-    white-space: nowrap;
+    max-width: calc(100vw - 32px);
+    white-space: normal;
     z-index: 999;
     transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s;
     opacity: 0;
@@ -383,12 +388,12 @@
 </header>
 
 <div class="card" id="formCard">
-  <div id="formView">
+  <form id="formView" novalidate>
 
     <div class="field">
-      <label>문의 유형 <span class="required-dot"></span></label>
+      <label for="category">문의 유형 <span class="required-dot"></span></label>
       <div class="select-wrap">
-        <select id="category" required onchange="onCategoryChange()">
+        <select id="category" required>
           <option value="" disabled selected>유형을 선택해주세요</option>
           <option value="bug">🐛 버그 / 오류 신고</option>
           <option value="feature">💡 기능 제안</option>
@@ -399,8 +404,8 @@
     </div>
 
     <div class="field">
-      <label>이름 또는 닉네임 <span class="required-dot"></span></label>
-      <input type="text" id="name" placeholder="홍길동" maxlength="30" autocomplete="name">
+      <label for="name">이름 또는 닉네임 <span class="required-dot"></span></label>
+      <input type="text" id="name" required placeholder="홍길동" maxlength="30" autocomplete="name">
     </div>
 
     <div class="field">
@@ -412,8 +417,8 @@
     </div>
 
     <div class="field">
-      <label>문의 내용 <span class="required-dot"></span></label>
-      <textarea id="message" placeholder="겪고 계신 상황이나 문의 내용을 자세히 적어주세요." maxlength="1000"></textarea>
+      <label for="message">문의 내용 <span class="required-dot"></span></label>
+      <textarea id="message" required placeholder="겪고 계신 상황이나 문의 내용을 자세히 적어주세요." maxlength="1000"></textarea>
       <p class="char-count" id="charCount">0 / 1000</p>
     </div>
 
@@ -423,13 +428,13 @@
         <span class="optional-badge">선택 · 최대 10장</span>
       </div>
 
-      <input type="file" id="imageInput" accept="image/*" multiple onchange="onFileChange(event)">
+      <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" multiple>
 
       <!-- 업로드 전 -->
-      <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
-        <div class="upload-icon">🖼️</div>
-        <p class="upload-text"><strong>탭하여 이미지 첨부</strong><br>PNG, JPG, GIF · 최대 8MB · 10장</p>
-      </div>
+      <button type="button" class="upload-area" id="uploadArea">
+        <span class="upload-icon">🖼️</span>
+        <span class="upload-text"><strong>탭하여 이미지 첨부</strong><br>JPEG, PNG, WebP · 장당 8MB · 10장</span>
+      </button>
 
       <!-- 미리보기 그리드 -->
       <div id="previewSection" style="display:none;">
@@ -438,223 +443,30 @@
       </div>
     </div>
 
-    <button class="submit-btn" id="submitBtn" onclick="submitForm()">
+    <p style="font-size:12px;line-height:1.6;color:var(--muted);margin-bottom:12px;">문의 내용과 첨부는 Lightlink 운영팀이 검토하며, 필요한 정보만 작업으로 연결합니다.</p>
+    <button type="submit" class="submit-btn" id="submitBtn">
       <span class="btn-inner">
         <span class="spinner"></span>
         <span class="btn-text">문의 보내기</span>
       </span>
     </button>
-  </div>
+  </form>
 
   <div class="success-view" id="successView">
     <div class="success-icon">✉️</div>
-    <p class="success-title">문의가 접수됐어요</p>
+    <p class="success-title" id="successTitle" tabindex="-1">문의가 접수됐어요</p>
+    <p class="receipt-number" id="receiptNumber"></p>
     <p class="success-sub" id="successSub">소중한 의견 감사드려요.<br>확인 후 빠르게 답변드릴게요.</p>
-    <button class="back-btn" onclick="resetForm()">← 처음으로</button>
+    <button type="button" class="back-btn" id="resetButton">새 문의 작성</button>
   </div>
 </div>
 
-<div class="toast" id="toast">
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
   <span id="toastIcon"></span>
   <span id="toastMsg"></span>
 </div>
 
-<script>
-  const WORKER_URL = 'https://broken-pond-fb01.minkyoung2550.workers.dev';
-  const MAX_IMAGES = 10;
-  const MAX_SIZE = 8 * 1024 * 1024;
-
-  let selectedFiles = [];
-
-  const categoryLabels = {
-    bug: '🐛 버그 / 오류 신고',
-    feature: '💡 기능 제안',
-    account: '👤 계정 관련',
-    etc: '💬 기타 문의'
-  };
-
-  const categoryColors = {
-    bug: 0xC0553A,
-    feature: 0x1B5B73,
-    account: 0x5B73B5,
-    etc: 0x5B8B5B
-  };
-
-  const placeholders = {
-    default: '겪고 계신 상황이나 문의 내용을 자세히 적어주세요.',
-    account: '소속 교구와 속회를 먼저 알려주시면 더 빠르게 도와드릴 수 있어요.\n\n예) ○○교구 ○○속회\n\n문의 내용:'
-  };
-
-  function onCategoryChange() {
-    const cat = document.getElementById('category').value;
-    document.getElementById('message').placeholder = placeholders[cat] || placeholders.default;
-  }
-
-  document.getElementById('message').addEventListener('input', () => {
-    const len = document.getElementById('message').value.length;
-    const el = document.getElementById('charCount');
-    el.textContent = `${len} / 1000`;
-    el.className = 'char-count' + (len > 900 ? ' warn' : '');
-  });
-
-  function onFileChange(e) {
-    const newFiles = Array.from(e.target.files);
-    e.target.value = ''; // 같은 파일 재선택 가능하도록 초기화
-
-    let skipped = 0;
-    for (const file of newFiles) {
-      if (selectedFiles.length >= MAX_IMAGES) {
-        showToast(`최대 ${MAX_IMAGES}장까지 첨부할 수 있어요.`, 'error');
-        break;
-      }
-      if (file.size > MAX_SIZE) {
-        skipped++;
-        continue;
-      }
-      selectedFiles.push(file);
-    }
-    if (skipped > 0) showToast(`8MB 초과 이미지 ${skipped}장은 제외됐어요.`, 'error');
-
-    renderPreviews();
-  }
-
-  function renderPreviews() {
-    const grid = document.getElementById('previewGrid');
-    const section = document.getElementById('previewSection');
-    const uploadArea = document.getElementById('uploadArea');
-    const countEl = document.getElementById('imageCount');
-
-    grid.innerHTML = '';
-
-    if (selectedFiles.length === 0) {
-      section.style.display = 'none';
-      uploadArea.style.display = 'block';
-      return;
-    }
-
-    uploadArea.style.display = 'none';
-    section.style.display = 'block';
-
-    selectedFiles.forEach((file, idx) => {
-      const item = document.createElement('div');
-      item.className = 'preview-item';
-
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
-      img.alt = `이미지 ${idx + 1}`;
-
-      const btn = document.createElement('button');
-      btn.className = 'remove-btn';
-      btn.textContent = '✕';
-      btn.onclick = () => removeFile(idx);
-
-      item.appendChild(img);
-      item.appendChild(btn);
-      grid.appendChild(item);
-    });
-
-    // 10장 미만이면 추가 버튼
-    if (selectedFiles.length < MAX_IMAGES) {
-      const addBtn = document.createElement('div');
-      addBtn.className = 'add-more';
-      addBtn.innerHTML = '<span>+</span><span>추가</span>';
-      addBtn.onclick = () => document.getElementById('imageInput').click();
-      grid.appendChild(addBtn);
-    }
-
-    countEl.textContent = `${selectedFiles.length} / ${MAX_IMAGES}장`;
-  }
-
-  function removeFile(idx) {
-    selectedFiles.splice(idx, 1);
-    renderPreviews();
-  }
-
-  function showToast(msg, type = '') {
-    const toast = document.getElementById('toast');
-    document.getElementById('toastIcon').textContent = type === 'success' ? '✅' : '❌';
-    document.getElementById('toastMsg').textContent = msg;
-    toast.className = `toast ${type} show`;
-    setTimeout(() => { toast.className = `toast ${type}`; }, 3200);
-  }
-
-  async function submitForm() {
-    const category = document.getElementById('category').value;
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const message = document.getElementById('message').value.trim();
-
-    if (!category) return showToast('문의 유형을 선택해주세요.', 'error');
-    if (!name) return showToast('이름을 입력해주세요.', 'error');
-    if (!message) return showToast('문의 내용을 입력해주세요.', 'error');
-
-    const btn = document.getElementById('submitBtn');
-    btn.classList.add('loading');
-
-    const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
-
-    let desc = '';
-    desc += `**유형**\n${categoryLabels[category]}\n\n`;
-    desc += `**이름**\n${name}\n\n`;
-    if (email) desc += `**이메일**\n${email}\n\n`;
-    desc += `**문의 내용**\n${message.length > 800 ? message.slice(0, 800) + '…' : message}`;
-
-    const embedPayload = {
-      username: '문의봇',
-      embeds: [{
-        title: '📬 새 문의가 도착했어요',
-        color: categoryColors[category] || 0x1B5B73,
-        description: desc,
-        footer: { text: `접수 시각: ${now} KST` }
-      }]
-    };
-
-    try {
-      let res;
-      if (selectedFiles.length > 0) {
-        const formData = new FormData();
-        formData.append('payload_json', JSON.stringify(embedPayload));
-        selectedFiles.forEach((file, idx) => {
-          formData.append(`files[${idx}]`, file, file.name);
-        });
-        res = await fetch(WORKER_URL, { method: 'POST', body: formData });
-      } else {
-        res = await fetch(WORKER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(embedPayload),
-        });
-      }
-
-      if (res.ok || res.status === 204) {
-        document.getElementById('formView').style.display = 'none';
-        document.getElementById('successSub').innerHTML = email
-          ? '입력하신 이메일로 답변을 드릴게요.<br>보통 1–2 영업일 내에 연락드립니다.'
-          : '소중한 의견 감사드려요.<br>확인 후 빠르게 답변드릴게요.';
-        document.getElementById('successView').style.display = 'flex';
-      } else {
-        throw new Error(`HTTP ${res.status}`);
-      }
-    } catch (e) {
-      console.error(e);
-      showToast('전송 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.', 'error');
-    } finally {
-      btn.classList.remove('loading');
-    }
-  }
-
-  function resetForm() {
-    document.getElementById('formView').style.display = 'block';
-    document.getElementById('successView').style.display = 'none';
-    document.getElementById('category').value = '';
-    document.getElementById('name').value = '';
-    document.getElementById('email').value = '';
-    document.getElementById('message').value = '';
-    document.getElementById('charCount').textContent = '0 / 1000';
-    document.getElementById('message').placeholder = placeholders.default;
-    selectedFiles = [];
-    renderPreviews();
-  }
-</script>
+<script src="./contact-config.js"></script>
+<script type="module" src="./contact.js"></script>
 </body>
 </html>
