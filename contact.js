@@ -69,10 +69,11 @@ $('formView').addEventListener('submit', async (event) => {
     let body; let headers;
     if (selectedFiles.length) { body = new FormData(); body.append('request', JSON.stringify(payload)); for (const file of selectedFiles) body.append('files', file, file.name); }
     else { body = JSON.stringify(payload); headers = { 'Content-Type': 'application/json' }; }
-    const result = await fetch(endpoint, { method: 'POST', headers, body, credentials: 'omit', signal: AbortSignal.timeout(150_000) });
-    const receipt = await result.json();
-    if (!result.ok) throw new Error(typeof receipt.message === 'string' ? receipt.message : '접수를 확인할 수 없습니다. 같은 내용으로 다시 시도해주세요.');
-    if (!/^[a-f0-9]{32}$/.test(receipt.id)) throw new Error('접수를 확인할 수 없습니다. 같은 내용으로 다시 시도해주세요.');
+    const result = await fetch(endpoint, { method: 'POST', headers, body, credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(150_000) });
+    const receipt = await result.json().catch(() => null);
+    if (result.status !== 201 || typeof receipt?.id !== 'string' || !/^[a-f0-9]{32}$/.test(receipt.id)) {
+      throw new Error(typeof receipt?.message === 'string' ? receipt.message : '접수를 확인할 수 없습니다. 같은 내용으로 다시 시도해주세요.');
+    }
     clearTimeout(toastTimer); $('toast').className = 'toast'; $('toastIcon').textContent = ''; $('toastMsg').textContent = '';
     try { sessionStorage.removeItem('lightlink:contact-attempt'); } catch { /* Optional storage. */ }
     attempt = null;
