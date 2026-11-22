@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "lightlink-contact-intake",
+  "main": "index.mjs",
+  "compatibility_date": "2026-11-21",
+  "workers_dev": true,
+  "vars": { "CONTACT_ALLOWED_ORIGIN": "https://contact.lightlink.kr" },
+  "ratelimits": [
+    { "name": "CONTACT_RATE_LIMITER", "namespace_id": "21920261121", "simple": { "limit": 5, "period": 60 } }
+  ]
+}

@@ -1,1 +1,8 @@
 .DS_Store
+node_modules/
+.pnpm-store/
+.wrangler/
+test-results/
+playwright-report/
+.dev.vars
+.env
